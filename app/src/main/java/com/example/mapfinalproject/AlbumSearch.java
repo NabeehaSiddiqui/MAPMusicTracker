@@ -69,7 +69,12 @@ public class AlbumSearch extends AppCompatActivity {
                 if (!inputName.isEmpty() && !inputTitle.isEmpty()) {
                     onSearchButtonClick(v);
                 } else {
-                    Toast.makeText(getApplicationContext(), "Unsuccessful - Please retry", Toast.LENGTH_LONG).show();
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            Toast.makeText(getApplicationContext(), "Unsuccessful - Please enter valid values", Toast.LENGTH_LONG).show();
+                        }
+                    });
                 }
             }
         });
@@ -113,12 +118,29 @@ public class AlbumSearch extends AppCompatActivity {
                     Toast.makeText(getApplicationContext(), "Unsuccessful - Please retry", Toast.LENGTH_LONG).show();
                     return;
                 } else {
-                    List<Album> albumList = response.body().getAlbums();
-
-                    Log.e("Album retreived", String.valueOf(albumList.size()));
-                    AlbumAdapter albumAdapter = new AlbumAdapter(albumList, appDatabase.favoriteAlbumDao(), executor);
-                    recyclerView.setAdapter(albumAdapter);
-                    Toast.makeText(getApplicationContext(), "Response received", Toast.LENGTH_LONG).show();
+                    executor.execute(new Runnable() {
+                        @Override
+                        public void run() {
+                            if (!response.isSuccessful()) {
+                                runOnUiThread(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        Toast.makeText(getApplicationContext(), "Unsuccessful - Please retry", Toast.LENGTH_LONG).show();
+                                    }
+                                });
+                                return;
+                            } else {
+                                List<Album> albumList = response.body().getAlbums();
+                                AlbumAdapter artistAdapter = new AlbumAdapter(albumList, appDatabase.favoriteAlbumDao(), executor);
+                                runOnUiThread(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        AlbumAdapter albumAdapter = new AlbumAdapter(albumList, appDatabase.favoriteAlbumDao(), executor);
+                                    }
+                                });
+                            }
+                        }
+                    });
                 }
             }
 

@@ -62,7 +62,17 @@ public class ArtistSearch extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 userInput = userSearch.getText().toString();
-                onSearchButtonClick(v);
+                if (!userInput.isEmpty()) {
+                    onSearchButtonClick(v);
+                } else {
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            Toast.makeText(getApplicationContext(), "Unsuccessful - Please enter valid values", Toast.LENGTH_LONG).show();
+                        }
+                    });
+                }
+
             }
         });
 
@@ -99,14 +109,29 @@ public class ArtistSearch extends AppCompatActivity {
         result.enqueue(new Callback<ArtistInfo>() {
             @Override
             public void onResponse(Call<ArtistInfo> call, Response<ArtistInfo> response) {
-                if (!response.isSuccessful()) {
-                    Toast.makeText(getApplicationContext(), "Unsuccessful - Please retry", Toast.LENGTH_LONG).show();
-                    return;
-                } else {
-                    List<Artist> artistList = response.body().getArtists();
-                    ArtistAdapter artistAdapter = new ArtistAdapter(artistList, appDatabase.favoriteArtistDao(), executor);
-                    recyclerView.setAdapter(artistAdapter);
-                }
+                executor.execute(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (!response.isSuccessful()) {
+                            runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    Toast.makeText(getApplicationContext(), "Unsuccessful - Please retry", Toast.LENGTH_LONG).show();
+                                }
+                            });
+                            return;
+                        } else {
+                            List<Artist> artistList = response.body().getArtists();
+                            ArtistAdapter artistAdapter = new ArtistAdapter(artistList, appDatabase.favoriteArtistDao(), executor);
+                            runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    recyclerView.setAdapter(artistAdapter);
+                                }
+                            });
+                        }
+                    }
+                });
             }
 
             @Override
